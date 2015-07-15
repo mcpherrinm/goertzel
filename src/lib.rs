@@ -1,5 +1,6 @@
 // This (implicitly/naively) uses a rectangular window.  Some way to set up a window function
 // will be needed probably -- if mutating your samples before calling this isn't sufficient.
+use std::f32;
 
 /// Set up parameters (and some precomputed values for those).
 #[derive(Clone, Copy)]
@@ -21,7 +22,6 @@ pub struct Partial {
 
 impl Parameters {
     pub fn new(target_freq: f32, sample_rate: f32, window_size: u32) -> Self {
-        use std::f32;
         let k = target_freq * (window_size as f32) / sample_rate;
         let omega = (f32::consts::PI * 2. * k) / (window_size as f32);
         let cosine = omega.cos();
@@ -39,7 +39,7 @@ impl Parameters {
 }
 
 impl Partial {
-    pub fn add(mut self, samples: &[u16]) -> Self {
+    pub fn add(mut self, samples: &[i16]) -> Self {
         for &sample in samples {
             let this = self.params.term_coefficient * self.prev - self.prevprev + (sample as f32);
             self.prevprev = self.prev;
@@ -61,7 +61,31 @@ impl Partial {
 
 #[test]
 fn zero_data() {
-    let p = Parameters::new(1800., 44100., 256);
+    let p = Parameters::new(1800., 8000., 256);
     assert!(p.start().add(&[0; 256]).finish_mag() == 0.);
     assert!(p.start().add(&[0; 128]).add(&[0;128]).finish_mag() == 0.);
 }
+
+#[test]
+fn one_sine() {
+    let mut buf = [0; 8000];
+    // Generate a 1 second sine wave at 1800 hz
+    // Using 8khz sample rate: Generate 8k samples,
+    // map them into our second (zero to one):
+    let step = 1. / 8000.;
+    for sample in (0 .. 8000) {
+        let time = sample as f32 * step;
+        buf[sample] = ( time * 1800. * 2. * f32::consts::PI ).sin() as i16
+    }
+
+    let p = Parameters::new(1800., 8000., 256);
+    let mag1800 = p.start().add(&buf[0..256]).finish_mag();
+    println!("1800: {}", mag1800);
+    for freq in (0 .. 30).map(|x| (x * 100) as f32) {
+        let p = Parameters::new(freq, 8000., 256);
+        let mag = p.start().add(&buf[0..256]).finish_mag();
+        println!("{}: {}", freq, mag);
+    }
+
+}
+
