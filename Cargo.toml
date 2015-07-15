@@ -1,0 +1,4 @@
+[package]
+name = "goertzel"
+version = "0.1.0"
+authors = ["Matt McPherrin <git@mcpherrin.ca>"]
