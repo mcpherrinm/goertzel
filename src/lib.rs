@@ -1,6 +1,7 @@
 // This (implicitly/naively) uses a rectangular window.  Some way to set up a window function
 // will be needed probably -- if mutating your samples before calling this isn't sufficient.
 use std::f32;
+use std::f32::consts::PI;
 
 /// Set up parameters (and some precomputed values for those).
 #[derive(Clone, Copy)]
@@ -75,7 +76,7 @@ fn one_sine() {
     let step = 1. / 8000.;
     for sample in (0 .. 8000) {
         let time = sample as f32 * step;
-        buf[sample] = ( time * 1800. * 2. * f32::consts::PI ).sin() as i16
+        buf[sample] = ((time * 1800. * 2. * PI).sin()*std::i16::MAX as f32) as i16;
     }
 
     let p = Parameters::new(1800., 8000., 256);
@@ -85,6 +86,9 @@ fn one_sine() {
         let p = Parameters::new(freq, 8000., 256);
         let mag = p.start().add(&buf[0..256]).finish_mag();
         println!("{}: {}", freq, mag);
+        if freq != 1800. {
+            assert!(mag1800 > 10.*mag);
+        }
     }
 
 }
