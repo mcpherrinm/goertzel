@@ -7,7 +7,7 @@ use std::f32::consts::PI;
 #[derive(Clone, Copy)]
 pub struct Parameters {
     // Parameters we're working with
-    window_size: u32,
+    window_size: usize,
     // Precomputed value:
     sine: f32,
     cosine: f32,
@@ -16,13 +16,13 @@ pub struct Parameters {
 
 pub struct Partial {
     params: Parameters,
-    //count: u32,
+    count: usize,
     prev: f32,
     prevprev: f32,
 }
 
 impl Parameters {
-    pub fn new(target_freq: f32, sample_rate: f32, window_size: u32) -> Self {
+    pub fn new(target_freq: f32, sample_rate: f32, window_size: usize) -> Self {
         let k = target_freq * (window_size as f32) / sample_rate;
         let omega = (f32::consts::PI * 2. * k) / (window_size as f32);
         let cosine = omega.cos();
@@ -35,7 +35,7 @@ impl Parameters {
     }
 
     pub fn start(self) -> Partial {
-        Partial{ params: self, prev: 0., prevprev: 0. }
+        Partial{ params: self, count: 0, prev: 0., prevprev: 0. }
     }
 }
 
@@ -46,9 +46,11 @@ impl Partial {
             self.prevprev = self.prev;
             self.prev = this;
         }
+        self.count += samples.len();
         self
     }
     pub fn finish(self) -> (f32, f32) {
+        assert_eq!(self.count, self.params.window_size);
         let real = self.prev - self.prevprev * self.params.cosine;
         let imag = self.prevprev * self.params.sine;
         (real, imag)
@@ -72,9 +74,6 @@ fn sine() {
     let mut buf = [0; 8000];
     for &freq in [697., 1200., 1800., 1633.].iter() {
         // Generate a 1 second sine wave at freq hz
-        // Using 8khz sample rate: Generate 8k samples,
-        // map them into our second (zero to one):
-
         let step = 1. / 8000.;
         for sample in (0 .. 8000) {
             let time = sample as f32 * step;
@@ -82,10 +81,10 @@ fn sine() {
         }
 
         let p = Parameters::new(freq, 8000., 8000);
-        let mag = p.start().add(&buf[0..256]).finish_mag();
+        let mag = p.start().add(&buf[..]).finish_mag();
         for testfreq in (0 .. 30).map(|x| (x * 100) as f32) {
             let p = Parameters::new(testfreq, 8000., 8000);
-            let testmag = p.start().add(&buf[0..256]).finish_mag();
+            let testmag = p.start().add(&buf[..]).finish_mag();
             println!("{:4}: {:12.3}", testfreq, testmag);
             if (freq-testfreq).abs() > 100. {
                 println!("{} > 10*{}", mag, testmag);
