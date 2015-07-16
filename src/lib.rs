@@ -22,8 +22,8 @@ pub struct Partial {
 }
 
 impl Parameters {
-    pub fn new(target_freq: f32, sample_rate: f32, window_size: usize) -> Self {
-        let k = target_freq * (window_size as f32) / sample_rate;
+    pub fn new(target_freq: f32, sample_rate: u32, window_size: usize) -> Self {
+        let k = target_freq * (window_size as f32) / (sample_rate as f32);
         let omega = (f32::consts::PI * 2. * k) / (window_size as f32);
         let cosine = omega.cos();
         Parameters {
@@ -64,7 +64,7 @@ impl Partial {
 
 #[test]
 fn zero_data() {
-    let p = Parameters::new(1800., 8000., 256);
+    let p = Parameters::new(1800., 8000, 256);
     assert!(p.start().add(&[0; 256]).finish_mag() == 0.);
     assert!(p.start().add(&[0; 128]).add(&[0;128]).finish_mag() == 0.);
 }
@@ -80,10 +80,10 @@ fn sine() {
             buf[sample] = ((time * freq * 2. * PI).sin()*std::i16::MAX as f32) as i16;
         }
 
-        let p = Parameters::new(freq, 8000., 8000);
+        let p = Parameters::new(freq, 8000, 8000);
         let mag = p.start().add(&buf[..]).finish_mag();
         for testfreq in (0 .. 30).map(|x| (x * 100) as f32) {
-            let p = Parameters::new(testfreq, 8000., 8000);
+            let p = Parameters::new(testfreq, 8000, 8000);
             let testmag = p.start().add(&buf[..]).finish_mag();
             println!("{:4}: {:12.3}", testfreq, testmag);
             if (freq-testfreq).abs() > 100. {
