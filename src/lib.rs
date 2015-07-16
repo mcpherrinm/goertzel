@@ -68,28 +68,30 @@ fn zero_data() {
 }
 
 #[test]
-fn one_sine() {
+fn sine() {
     let mut buf = [0; 8000];
-    // Generate a 1 second sine wave at 1800 hz
-    // Using 8khz sample rate: Generate 8k samples,
-    // map them into our second (zero to one):
-    let step = 1. / 8000.;
-    for sample in (0 .. 8000) {
-        let time = sample as f32 * step;
-        buf[sample] = ((time * 1800. * 2. * PI).sin()*std::i16::MAX as f32) as i16;
-    }
+    for &freq in [697., 1200., 1800., 1633.].iter() {
+        // Generate a 1 second sine wave at freq hz
+        // Using 8khz sample rate: Generate 8k samples,
+        // map them into our second (zero to one):
 
-    let p = Parameters::new(1800., 8000., 256);
-    let mag1800 = p.start().add(&buf[0..256]).finish_mag();
-    println!("1800: {}", mag1800);
-    for freq in (0 .. 30).map(|x| (x * 100) as f32) {
-        let p = Parameters::new(freq, 8000., 256);
+        let step = 1. / 8000.;
+        for sample in (0 .. 8000) {
+            let time = sample as f32 * step;
+            buf[sample] = ((time * freq * 2. * PI).sin()*std::i16::MAX as f32) as i16;
+        }
+
+        let p = Parameters::new(freq, 8000., 8000);
         let mag = p.start().add(&buf[0..256]).finish_mag();
-        println!("{}: {}", freq, mag);
-        if freq != 1800. {
-            assert!(mag1800 > 10.*mag);
+        for testfreq in (0 .. 30).map(|x| (x * 100) as f32) {
+            let p = Parameters::new(testfreq, 8000., 8000);
+            let testmag = p.start().add(&buf[0..256]).finish_mag();
+            println!("{:4}: {:12.3}", testfreq, testmag);
+            if (freq-testfreq).abs() > 100. {
+                println!("{} > 10*{}", mag, testmag);
+                assert!(mag > 10.*testmag);
+            }
         }
     }
-
 }
 
