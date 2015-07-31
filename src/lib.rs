@@ -24,7 +24,7 @@ pub struct Partial {
 impl Parameters {
     pub fn new(target_freq: f32, sample_rate: u32, window_size: usize) -> Self {
         let k = target_freq * (window_size as f32) / (sample_rate as f32);
-        let omega = (f32::consts::PI * 2. * k) / (window_size as f32);
+        let omega = (PI * 2. * k) / (window_size as f32);
         let cosine = omega.cos();
         Parameters {
             window_size: window_size,
@@ -81,7 +81,7 @@ fn sine() {
         let step = 1. / 8000.;
         for sample in (0 .. 8000) {
             let time = sample as f32 * step;
-            buf[sample] = ((time * freq * 2. * PI).sin()*std::i16::MAX as f32) as i16;
+            buf[sample] = ((time * freq * PI * 2.).sin() * std::i16::MAX as f32) as i16;
         }
 
         let p = Parameters::new(freq, 8000, 8000);
