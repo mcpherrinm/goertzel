@@ -37,6 +37,10 @@ impl Parameters {
     pub fn start(self) -> Partial {
         Partial{ params: self, count: 0, prev: 0., prevprev: 0. }
     }
+
+    pub fn mag(self, samples: &[i16]) -> f32 {
+        self.start().add(samples).finish_mag()
+    }
 }
 
 impl Partial {
@@ -84,7 +88,7 @@ fn sine() {
         let mag = p.start().add(&buf[..]).finish_mag();
         for testfreq in (0 .. 30).map(|x| (x * 100) as f32) {
             let p = Parameters::new(testfreq, 8000, 8000);
-            let testmag = p.start().add(&buf[..]).finish_mag();
+            let testmag = p.mag(&buf[..]);
             println!("{:4}: {:12.3}", testfreq, testmag);
             if (freq-testfreq).abs() > 100. {
                 println!("{} > 10*{}", mag, testmag);
